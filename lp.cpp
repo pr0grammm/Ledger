@@ -223,9 +223,7 @@ fin.seekg(0,ios::beg);
 while(fin.getline(record , RECORD_SIZE ,'#'))
 {
 
-cout<<record;
 list[i++].unpack();
-//	cout<<list[i].getAcc(); 
 
 }
 
@@ -312,10 +310,7 @@ void Master::unpack()
 char temp[RECORD_SIZE];
 strcpy(temp , record);
 this->accountNum =atoi(strtok(temp , "|"));
-cout<<"unpacked"<<endl;
-cout<<accountNum<<endl;
 strcpy(this->title , strtok(NULL , "|"));
-cout<<title<<endl;
 int i;
 for( i =0 ; i <11;i++)
 {
@@ -323,8 +318,6 @@ this->balances[i] =string_to_double(strtok(NULL , "|"));
 }
 
 this->balances[11] = string_to_double(strtok(NULL,"#"));
-for(int i=0 ; i<12;i++) cout<<balances[i]<<" ";
-cout<<endl;
 }
 
 
@@ -336,13 +329,12 @@ ofstream f;
 f.open(filename , ios::app);
 f.close();
 int N=read_into_ram(filename , list1);
-cout<<N;
 N++;
 list1[N-1].getData();
-cout<<list1[N-1].getAcc();
+
 //do insertion sort
 insertion_sort(list1,N);
-for(int i =0 ;i<N;i++) cout<<list1[i].getAcc()<<endl;
+
 //write list back to file
 ofstream fout;
 fout.open("Master.txt");
@@ -520,12 +512,18 @@ cout<<"*************************************************************************
 ft.close();
 }//end of function
 
+void cosequential_match(list1 , list2)
+{
 
+
+
+}
 void menu()
 {
 int opt;
 bool cont;
-
+int N1,N2;
+char filename[SIZE];
 while(1)
 {
 cout<<"\n1. edit journal file\t2. post transactions to ledger\t3. edit master file\t4. exit"<<endl;
@@ -569,8 +567,20 @@ case 1:
 	break;
 
 case 2:
-	//post transactions to ledger	
+	//post transactions to ledger
 	
+	//read both files into list
+	month = get_current_month();
+	N1=read_into_ram("Master.txt" , list1);
+	sprintf(filename , "%s.txt" , get_month_name(month));
+	N2=read_into_ram(filename , list2);
+
+	//sort lists in memory- list1 already sorted
+	insertion_sort(list2 , N2);
+	
+	cosquential_match(list1 , list2);
+	
+		
 	break;
 
 case 3://edit master file
