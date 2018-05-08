@@ -296,28 +296,12 @@ cout<<left<<setw(20)<<setfill(' ')<<title;
 for(int i =0 ;i<12 ; i++)
 {
 	if(balances[i] == 0.000005)//account has been added later (or) current month balance not yet posted
-	cout<<left<<setw(20)<<setfill(' ')<<' ';
+	cout<<left<<setw(12)<<setfill(' ')<<' ';
 
 	else
-	cout<<left<<setw(20)<<setfill(' ')<<balances[i];
+	cout<<left<<setw(12)<<setfill(' ')<<balances[i];
 }
 cout<<endl;
-/*
-cout.setf(ios::right , ios::adjustfield);
-cout<<accountNum<<'\t';
-cout.setf(ios::left , ios::adjustfield);
-cout<<setw(20)<<title;
-cout.setf(ios::right , ios::adjustfield);
-cout.setf(ios::right|ios::fixed , ios::floatfield);
-cout.precision(2);
-
-for(int i =0 ;i<=month; i++)
-{
-	cout<<'\t'<<setw(8)<<balances[i];
-}
-
-cout<<endl;
-*/
 }
 
 void Master:: pack()
@@ -345,15 +329,16 @@ void Master::unpack()
 {
 char temp[RECORD_SIZE];
 strcpy(temp , record);
-this->accountNum =atoi(strtok(temp , "|"));
-strcpy(this->title , strtok(NULL , "|"));
+accountNum =atoi(strtok(temp , "|"));
+strcpy(title , strtok(NULL , "|"));
+
 int i;
 for( i =0 ; i <11;i++)
 {
-this->balances[i] =string_to_double(strtok(NULL , "|"));
+balances[i] =string_to_double(strtok(NULL , "|"));
 }
 
-this->balances[11] = string_to_double(strtok(NULL,"#"));
+balances[11] = string_to_double(strtok(NULL,"#"));
 }
 
 
@@ -602,12 +587,13 @@ list1[i].processStartMaster(fprint);
 while(i < N1 || j <N2)
 {
 
-if(item1<item2)//finish this master record and start next
+if(item1<item2 && item1 != -1)//finish this master record and start next
 {
 
 	if(i==N1) //all records processed
 	{
 		item1 = lowValue;
+		
 	}
 
 	else//process this master record and read next if any
@@ -673,6 +659,28 @@ else // transaction with no master
 fprint.close();
 }//end of func
 
+void finishUp()
+{
+/*
+to be called after post transaction
+*/
+
+//write back to master from index
+fstream fout;
+fout.open("Master.txt");
+cout<<N1;
+
+for(int i =0; i < N1 ;i ++)
+{
+list1[i].pack();
+fout<<record;
+
+}
+fout.close();
+//change month
+//month = (month+1)%12;
+}//end of func 
+
 void menu()
 {
 int opt;
@@ -734,8 +742,7 @@ case 2:
 
 	//	
 	cosequential(list1 ,list2);
-	
-		
+	finishUp();		
 	break;
 
 case 3://edit master file
