@@ -22,6 +22,21 @@ void printData();
 void pack();
 void unpack();
 
+void processEndMaster(ofstream &);
+void processCurrentMaster(float);
+void processStartMaster(ofstream &);
+
+void printHeader(ofstream & stream)//to printout
+{
+stream<<accountNum<<'\t'<<title<<endl;
+}
+
+void printBalances(ofstream & stream, double prev_bal , double cur_bal)//balance line for print outs
+{
+stream<<"\t\t\t\tPrev. bal: "<<setw(8)<<fixed<<showpoint<<setprecision(2)<<prev_bal\
+<<"\tNew bal:\t"<<setw(8)<<fixed<<showpoint<<setprecision(2)<<cur_bal<<endl;
+}
+
 int getAcc()
 {
 return accountNum;
@@ -32,7 +47,7 @@ Master()
 {
 accountNum=0;
 title[0] = '0';
-for(int i = 0; i<12 ;i++) balances[i] = 0.005;
+for(int i = 0; i<12 ;i++) balances[i] = 0.000005;
 
 }
 };//end of class master 
@@ -52,9 +67,27 @@ void printData();
 void pack();
 void unpack();
 
+void printLine(ofstream & stream)//to print out
+{
+stream.setf(ios::right , ios::adjustfield);
+stream<<'\t'<<setw(6)<<checkNum<<'\t';
+stream.setf(ios::left,ios::adjustfield);
+stream<<date<<'\t'<<setw(30)<<desc;
+stream.setf(ios::right , ios::adjustfield);
+stream.setf(ios::right|ios::fixed,ios::floatfield);
+stream.precision(2);
+stream<<'\t'<<setw(8)<<amount<<endl;
+}
+
+
 int getAcc()
 {
 return accountNum;
+}
+
+float getAmount()
+{
+return amount;
 }
 
 };
@@ -65,6 +98,9 @@ char record[RECORD_SIZE];
 int month;//current month to be processed
 Master list1[SIZE];
 Transaction list2[SIZE];
+char outputList[1000][50000];
+int N1=0;
+int N2=0;
 
 template<class TYPE>
 void insertion_sort(TYPE list[],int N)
@@ -259,7 +295,7 @@ cout<<left<<setw(20)<<setfill(' ')<<title;
 
 for(int i =0 ;i<12 ; i++)
 {
-	if(balances[i] == 0.005)//account has been added later (or) current month balance not yet posted
+	if(balances[i] == 0.000005)//account has been added later (or) current month balance not yet posted
 	cout<<left<<setw(20)<<setfill(' ')<<' ';
 
 	else
@@ -297,7 +333,7 @@ strcat(record , title);
 for(int i = 0;i<12 ; i++)
 {
 	strcat(record , "|");
-	sprintf(b, "%.3f", balances[i]);
+	sprintf(b, "%.6f", balances[i]);
 	strcat(record , b);
 	
 }
@@ -401,7 +437,7 @@ strcat(record , "|");
 strcat(record , desc);
 strcat(record , "|");
 
-sprintf(c, "%.3f", amount);
+sprintf(c, "%.6f", amount);
 
 strcat(record, c);
 strcat(record , "#");
@@ -512,17 +548,135 @@ cout<<"*************************************************************************
 ft.close();
 }//end of function
 
-void cosequential_match(list1 , list2)
+void Master::processEndMaster(ofstream & fprint)
 {
+float prev_bal,cur_bal;
+cur_bal = balances[month-1];
 
-
+prev_bal=( (month == 1)?balances[11]:balances[month-2] );
+printBalances(fprint, prev_bal , cur_bal);
 
 }
+
+void Master::processStartMaster(ofstream & fprint)
+{
+//print header
+printHeader(fprint);
+
+//initialise new balance
+if(month == 1)
+{
+balances[0] = balances[11];
+}
+
+else
+balances[month-1] = balances[month-2];
+
+}
+
+void Master::processCurrentMaster(float amt)
+{
+
+balances[month-1] += amt;
+
+}
+
+void cosequential(Master list1[] ,Transaction list2[])
+{
+int i =0;//master
+int j= 0;//transaction
+int item1=0;
+int item2 = 0;
+int lowValue = -1;
+int highValue = 32767;
+
+ofstream fprint;
+char printFileName[30];
+sprintf(printFileName, "%s_report_print",get_month_name(month));
+fprint.open(printFileName);
+item1= list1[i].getAcc();
+item2 = list2[j].getAcc();
+
+list1[i].processStartMaster(fprint);
+
+while(i < N1 || j <N2)
+{
+
+if(item1<item2)//finish this master record and start next
+{
+
+	if(i==N1) //all records processed
+	{
+		item1 = lowValue;
+	}
+
+	else//process this master record and read next if any
+	{
+		list1[i].processEndMaster(fprint);
+		i++;
+
+		if(i<N1)//more records present
+		{
+			item1 = list1[i].getAcc();
+			list1[i].processStartMaster(fprint);
+		}
+		
+		else item1 = lowValue;//no more records
+
+	}
+}
+
+else if(item1==item2)//transaction matches master
+{
+
+	if(j == N2)//no more transaction records to be processed
+	{
+		item2 = highValue;
+	}
+
+	else//process this record and read in next record if present
+	{
+	
+		list1[i].processCurrentMaster(list2[j].getAmount());
+		list2[j].printLine(fprint);
+		j++;
+
+
+		if(j<N2)//next record exists 
+		{
+			item2 = list2[j].getAcc();
+		}
+
+		else//all records exhausted
+		{
+		item2 = highValue;
+		}
+	}
+}
+
+else // transaction with no master
+{
+
+	if(j == N2) item2 = highValue; // all transcation records over
+	else//skip transaction
+	{
+		//print some message
+
+		j++;
+		if(j < N2) item2 = list2[j].getAcc();
+
+		else item2 = highValue;
+	}
+
+}
+}//end of while
+fprint.close();
+}//end of func
+
 void menu()
 {
 int opt;
 bool cont;
-int N1,N2;
 char filename[SIZE];
 while(1)
 {
@@ -577,8 +731,9 @@ case 2:
 
 	//sort lists in memory- list1 already sorted
 	insertion_sort(list2 , N2);
-	
-	cosquential_match(list1 , list2);
+
+	//	
+	cosequential(list1 ,list2);
 	
 		
 	break;
