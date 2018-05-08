@@ -152,7 +152,7 @@ if(!(f.is_open()))
 if(is_empty(f))
 {
 	//write 1 to file
-	f<<"1"<<endl;
+	f<<"1";
 	month = 1;
 	cout<<"file was empty"<<endl;
 }
@@ -678,7 +678,14 @@ fout<<record;
 }
 fout.close();
 //change month
-//month = (month+1)%12;
+char temp[10];
+month = (month+1)%12;
+sprintf(temp,"%d",month);
+//update track month with new month
+ofstream f;
+f.open("track_month.txt");
+f<<temp;
+f.close();
 }//end of func 
 
 void menu()
